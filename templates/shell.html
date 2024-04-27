@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/css/xterm.min.css"
+    />
+    <style>
+      body {
+        margin: 0;
+        height: 100vh;
+        background-color: #212121;
+      }
+      .terminal {
+        overflow: hidden;
+        scrollbar-color: #808080 #212121;
+        scrollbar-width: thin;
+        width: 100vw;
+        height: 100vh;
+      }
+    </style>
+    <title>Terminal - {{ .container.Name }}</title>
+  </head>
+  <body>
+    <div id="shell" class="terminal"></div>
+    <script src="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/lib/xterm.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@xterm/addon-fit@0.10.0/lib/addon-fit.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@xterm/addon-webgl@0.18.0/lib/addon-webgl.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@xterm/addon-attach@0.11.0/lib/addon-attach.min.js"></script>
+    <script>
+      const webSocket = new WebSocket(
+        'ws://' + window.location.host + '/terminal/' + '{{ .container.Name }}'
+      );
+      function sendSize() {
+        const windowSize = { high: terminal.rows, width: terminal.cols };
+        const blob = new Blob([JSON.stringify(windowSize)], {
+          type: 'application/json',
+        });
+        webSocket.send(blob);
+      }
+      const terminal = new Terminal({
+        fontFamily:
+          'SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+      });
+      terminal.open(document.getElementById('shell'));
+      const fitAddon = new FitAddon.FitAddon();
+      terminal.loadAddon(fitAddon);
+      fitAddon.fit();
+      webSocket.onopen = sendSize;
+      const attachAddon = new AttachAddon.AttachAddon(webSocket);
+      window.addEventListener(
+        'resize',
+        () => {
+          fitAddon.fit();
+          sendSize();
+        },
+        false
+      );
+      terminal.loadAddon(new WebglAddon.WebglAddon());
+      terminal.loadAddon(attachAddon);
+    </script>
+  </body>
+</html>

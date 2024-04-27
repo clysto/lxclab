@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+      * {
+        box-sizing: border-box;
+        font-family: monospace;
+      }
+      body {
+        margin: 0 auto;
+        max-width: 800px;
+        padding: 0 5px 5px 5px;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+      }
+      td,
+      th {
+        border: 1px solid #000;
+        padding: 2px 4px;
+      }
+      .create {
+        margin-bottom: 20px;
+      }
+      .containers {
+        margin-bottom: 20px;
+      }
+      header {
+        margin-bottom: 20px;
+        font-size: 16px;
+        display: flex;
+        justify-content: space-between;
+        border-top: 1px solid #888;
+        border-bottom: 1px solid #888;
+      }
+      footer {
+        text-align: center;
+        color: #888;
+        border-bottom: 1px solid #888;
+      }
+      .btn {
+        cursor: pointer;
+        color: #232dc1;
+      }
+      .btn:hover {
+        font-weight: bold;
+      }
+      #loader {
+        height: 10px;
+      }
+      .loader {
+        display: block;
+        position: relative;
+        height: 100%;
+        width: 100%;
+        overflow: hidden;
+      }
+      .loader::after {
+        content: '';
+        width: 40%;
+        height: 100%;
+        background: #888;
+        position: absolute;
+        top: 0;
+        left: 0;
+        box-sizing: border-box;
+        animation: animloader 2s linear infinite;
+      }
+      .Running {
+        color: #229f20;
+      }
+      .Stopped {
+        color: #a32c2c;
+      }
+      @keyframes animloader {
+        0% {
+          left: 0;
+          transform: translateX(-100%);
+        }
+        100% {
+          left: 100%;
+          transform: translateX(0%);
+        }
+      }
+    </style>
+    <title>LXC Lab</title>
+  </head>
+  <body>
+    <div id="loader"></div>
+    <header><strong>LXC Lab</strong><span>{{ .user }}</span></header>
+    <div class="create">
+      <form id="create-form" action="/create" method="post">
+        <input
+          type="text"
+          name="friendlyname"
+          placeholder="friendly name"
+          required
+        />
+        <input type="submit" value="Create" />
+      </form>
+    </div>
+    <div class="containers">
+      <table>
+        <thead>
+          <tr>
+            <th>name</th>
+            <th>image</th>
+            <th>status</th>
+            <th>ssh port</th>
+            <th>operation</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{ range .containers }}
+          <tr>
+            <td>{{ index .Config "user.friendlyname" }}</td>
+            <td>{{ index .Config "image.description" }}</td>
+            <td class="{{ .Status }}">{{ .Status }}</td>
+            <td>{{ index $.sshPorts .Name}}</td>
+            <td class="operations">
+              <span class="btn start-btn" data-container="{{ .Name }}">
+                Start
+              </span>
+              <span class="btn stop-btn" data-container="{{ .Name }}">
+                Stop
+              </span>
+              <span class="btn delete-btn" data-container="{{ .Name }}">
+                Delete
+              </span>
+              <span class="btn shell-btn" data-container="{{ .Name }}">
+                Shell
+              </span>
+            </td>
+          </tr>
+          {{ end }}
+        </tbody>
+      </table>
+    </div>
+    <footer>All rights reserved. &copy; 2023-2024</footer>
+    <script>
+      let operation = false;
+
+      function showLoader() {
+        document.getElementById('loader').innerHTML =
+          '<div class="loader"></div>';
+      }
+
+      document.getElementById('create-form').addEventListener('submit', (e) => {
+        operation = true;
+        showLoader();
+      });
+
+      document.querySelectorAll('.shell-btn').forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+          const name = e.target.getAttribute('data-container');
+          window.open('/shell/' + name, 'popup', 'width=800,height=500');
+        });
+      });
+
+      for (let action of ['start', 'stop', 'delete']) {
+        document.querySelectorAll(`.${action}-btn`).forEach((btn) => {
+          btn.addEventListener('click', (e) => {
+            if (operation) {
+              return;
+            }
+            const name = e.target.getAttribute('data-container');
+            operation = true;
+            showLoader();
+            fetch(`/${action}/${name}`, {
+              method: 'POST',
+            }).then(() => {
+              operation = false;
+              location.reload();
+            });
+          });
+        });
+      }
+    </script>
+  </body>
+</html>
