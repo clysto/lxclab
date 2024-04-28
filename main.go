@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"html/template"
 	"io"
+	"io/fs"
 	"net/http"
 	"os"
 	"time"
@@ -168,7 +169,10 @@ func terminal(c *gin.Context) {
 }
 
 //go:embed templates/*
-var f embed.FS
+var templatesDir embed.FS
+
+//go:embed public
+var staticDir embed.FS
 
 func main() {
 	port := os.Args[1]
@@ -185,8 +189,13 @@ func main() {
 		"admin1": "admin1",
 		"admin2": "admin2",
 	}))
-	templ := template.Must(template.New("").ParseFS(f, "templates/*.html"))
+	templ := template.Must(template.New("").ParseFS(templatesDir, "templates/*.html"))
 	r.SetHTMLTemplate(templ)
+	public, err := fs.Sub(staticDir, "public")
+	if err != nil {
+		panic(err)
+	}
+	r.StaticFS("/public", http.FS(public))
 	r.GET("/", home)
 	r.GET("/shell/:name", shell)
 	r.POST("/create", create)
