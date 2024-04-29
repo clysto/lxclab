@@ -126,6 +126,17 @@
       .Stopped {
         color: #bb3131;
       }
+      .tips {
+        margin-bottom: 20px;
+        background-color: #fbfaea;
+        padding: 10px;
+      }
+      .tips p {
+        margin: 0;
+      }
+      .center {
+        text-align: center;
+      }
       @keyframes animloader {
         0% {
           left: 0;
@@ -156,6 +167,25 @@
         />
         <button id="btn-create" type="submit">Create container</button>
       </form>
+    </div>
+    <div class="tips">
+      <p class="center">
+        <strong>Tips</strong>
+      </p>
+      <br />
+      <p>
+        <strong>How to open a web shell?</strong> <br />
+        Click the terminal icon to open a terminal in the web.
+      </p>
+      <br />
+      <p>
+        <strong>How to connect to your container using ssh?</strong><br />
+        Paste your ssh public key into ~/.ssh/authorized_keys, you can do this
+        using web shell, then use the following command to connect to your
+        container: <br />
+      </p>
+      <div class="center">ssh -p &lt;SSH Port&gt; ubuntu@&lt;IP&gt;</div>
+      <p>By default, the container disables ssh login with password.</p>
     </div>
     <div class="containers">
       <table>
