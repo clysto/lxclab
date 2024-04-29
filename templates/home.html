@@ -3,6 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/png" href="/public/containers.svg" />
     <style>
       * {
         box-sizing: border-box;
@@ -15,14 +16,41 @@
         max-width: 800px;
         padding: 0 5px 5px 5px;
       }
+      input {
+        padding: 4px 8px;
+        margin-right: 5px;
+        border: none;
+        border-bottom: 1px solid #888;
+        background-color: #eeeeee;
+      }
+      input:focus {
+        outline: none;
+        border-color: #000;
+      }
+      #btn-create {
+        font-weight: bold;
+        padding: 4px 8px;
+        border: 1px solid #0e8420;
+        cursor: pointer;
+        background-color: #0e8420;
+        color: #ffffff;
+      }
+      #btn-create:hover {
+        border: 1px solid #0c6d1a;
+        background-color: #0c6d1a;
+      }
       table {
         border-collapse: collapse;
         width: 100%;
       }
       td,
       th {
-        border: 1px solid #000;
+        border-bottom: 1px solid #000;
         padding: 2px 4px;
+        text-align: left;
+      }
+      tbody tr:hover {
+        background-color: #f1f1f1;
       }
       .create {
         margin-bottom: 20px;
@@ -31,10 +59,12 @@
         margin-bottom: 20px;
       }
       header {
+        padding: 4px 0;
         margin-bottom: 20px;
         font-size: 16px;
         display: flex;
-        justify-content: space-between;
+        justify-content: center;
+        align-items: center;
         border-top: 1px solid #888;
         border-bottom: 1px solid #888;
       }
@@ -45,10 +75,29 @@
       }
       .btn {
         cursor: pointer;
-        color: #232dc1;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background-color: #dadada;
+        flex: 1;
+        width: 25px;
+        height: 25px;
+        text-align: center;
+      }
+      .divider {
+        width: 1px;
+        background-color: #c0c0c0;
+      }
+      .operations {
+        height: 100%;
+        display: flex;
       }
       .btn:hover {
-        font-weight: bold;
+        background-color: #bcbcbc;
+      }
+      .title {
+        margin-left: 10px;
+        flex: 1;
       }
       #loader {
         height: 10px;
@@ -62,7 +111,7 @@
       }
       .loader::after {
         content: '';
-        width: 40%;
+        width: 200px;
         height: 100%;
         background: #888;
         position: absolute;
@@ -72,10 +121,10 @@
         animation: animloader 2s linear infinite;
       }
       .Running {
-        color: #229f20;
+        color: #0e8420;
       }
       .Stopped {
-        color: #a32c2c;
+        color: #bb3131;
       }
       @keyframes animloader {
         0% {
@@ -92,7 +141,11 @@
   </head>
   <body>
     <div id="loader"></div>
-    <header><strong>LXC Lab</strong><span>{{ .user }}</span></header>
+    <header>
+      <img src="/public/containers.svg" style="height: 20px" />
+      <strong class="title">LXC Lab </strong>
+      <span>[{{ .user }}]</span>
+    </header>
     <div class="create">
       <form id="create-form" action="/create" method="post">
         <input
@@ -101,40 +154,103 @@
           placeholder="friendly name"
           required
         />
-        <input type="submit" value="Create" />
+        <button id="btn-create" type="submit">Create container</button>
       </form>
     </div>
     <div class="containers">
       <table>
         <thead>
           <tr>
-            <th>name</th>
-            <th>image</th>
-            <th>status</th>
-            <th>ssh port</th>
-            <th>operation</th>
+            <th>Name</th>
+            <th>Status</th>
+            <th>SSH Port</th>
+            <th style="width: 120px">Operations</th>
           </tr>
         </thead>
         <tbody>
           {{ range .containers }}
           <tr>
             <td>{{ index .Config "user.friendlyname" }}</td>
-            <td>{{ index .Config "image.description" }}</td>
-            <td class="{{ .Status }}">{{ .Status }}</td>
+            <td><span class="{{ .Status }}">●</span> {{ .Status }}</td>
             <td>{{ index $.sshPorts .Name}}</td>
-            <td class="operations">
-              <span class="btn start-btn" data-container="{{ .Name }}">
-                Start
-              </span>
-              <span class="btn stop-btn" data-container="{{ .Name }}">
-                Stop
-              </span>
-              <span class="btn delete-btn" data-container="{{ .Name }}">
-                Delete
-              </span>
-              <span class="btn shell-btn" data-container="{{ .Name }}">
-                Shell
-              </span>
+            <td style="padding: 0">
+              <div class="operations">
+                <span
+                  class="btn start-btn"
+                  data-container="{{ .Name }}"
+                  title="Start"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    fill="currentColor"
+                    class="bi bi-caret-right-fill"
+                    viewBox="0 0 16 16"
+                  >
+                    <path
+                      d="m12.14 8.753-5.482 4.796c-.646.566-1.658.106-1.658-.753V3.204a1 1 0 0 1 1.659-.753l5.48 4.796a1 1 0 0 1 0 1.506z"
+                    />
+                  </svg>
+                </span>
+                <div class="divider"></div>
+                <span
+                  class="btn stop-btn"
+                  data-container="{{ .Name }}"
+                  title="Stop"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    fill="currentColor"
+                    class="bi bi-stop-fill"
+                    viewBox="0 0 16 16"
+                  >
+                    <path
+                      d="M5 3.5h6A1.5 1.5 0 0 1 12.5 5v6a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 11V5A1.5 1.5 0 0 1 5 3.5"
+                    />
+                  </svg>
+                </span>
+                <div class="divider"></div>
+                <span
+                  class="btn shell-btn"
+                  data-container="{{ .Name }}"
+                  title="Shell"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    fill="currentColor"
+                    class="bi bi-terminal-fill"
+                    viewBox="0 0 16 16"
+                  >
+                    <path
+                      d="M0 3a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2zm9.5 5.5h-3a.5.5 0 0 0 0 1h3a.5.5 0 0 0 0-1m-6.354-.354a.5.5 0 1 0 .708.708l2-2a.5.5 0 0 0 0-.708l-2-2a.5.5 0 1 0-.708.708L4.793 6.5z"
+                    />
+                  </svg>
+                </span>
+                <div class="divider"></div>
+                <span
+                  class="btn delete-btn"
+                  data-container="{{ .Name }}"
+                  title="Delete"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    fill="currentColor"
+                    class="bi bi-trash-fill"
+                    viewBox="0 0 16 16"
+                  >
+                    <path
+                      d="M2.5 1a1 1 0 0 0-1 1v1a1 1 0 0 0 1 1H3v9a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V4h.5a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H10a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1zm3 4a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 .5-.5M8 5a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7A.5.5 0 0 1 8 5m3 .5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 1 0"
+                    />
+                  </svg>
+                </span>
+              </div>
             </td>
           </tr>
           {{ end }}
@@ -151,24 +267,28 @@
       }
 
       document.getElementById('create-form').addEventListener('submit', (e) => {
+        if (operation) {
+          e.preventDefault();
+          return;
+        }
         operation = true;
         showLoader();
       });
 
       document.querySelectorAll('.shell-btn').forEach((btn) => {
+        const name = btn.getAttribute('data-container');
         btn.addEventListener('click', (e) => {
-          const name = e.target.getAttribute('data-container');
           window.open('/shell/' + name, 'popup', 'width=800,height=500');
         });
       });
 
       for (let action of ['start', 'stop', 'delete']) {
         document.querySelectorAll(`.${action}-btn`).forEach((btn) => {
+          const name = btn.getAttribute('data-container');
           btn.addEventListener('click', (e) => {
             if (operation) {
               return;
             }
-            const name = e.target.getAttribute('data-container');
             operation = true;
             showLoader();
             fetch(`/${action}/${name}`, {

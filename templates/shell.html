@@ -3,10 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link
-      rel="stylesheet"
-      href="/public/xterm.min.css"
-    />
+    <link rel="icon" type="image/png" href="/public/containers.svg" />
+    <link rel="stylesheet" href="/public/xterm.min.css" />
     <style>
       body {
         margin: 0;
@@ -48,7 +46,12 @@
       const fitAddon = new FitAddon.FitAddon();
       terminal.loadAddon(fitAddon);
       fitAddon.fit();
-      webSocket.onopen = sendSize;
+      webSocket.onopen = () => {
+        sendSize();
+        setInterval(() => {
+          sendSize();
+        }, 5000);
+      };
       const attachAddon = new AttachAddon.AttachAddon(webSocket);
       window.addEventListener(
         'resize',
