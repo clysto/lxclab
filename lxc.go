@@ -171,7 +171,7 @@ func (c *LXCClient) StopContainer(username string, name string) error {
 	return op.Wait()
 }
 
-func (c *LXCClient) StartShell(name string, stdin io.Reader, stdout io.Writer, ch chan [2]int, dataDone chan bool) error {
+func (c *LXCClient) StartShell(name string, stdin io.Reader, stdout io.Writer, ch chan api.InstanceExecControl) error {
 	op, err := c.client.ExecInstance(name, api.InstanceExecPost{
 		Command: []string{"bash"},
 		Environment: map[string]string{
@@ -188,17 +188,11 @@ func (c *LXCClient) StartShell(name string, stdin io.Reader, stdout io.Writer, c
 		Stdin:    stdin,
 		Stdout:   stdout,
 		Stderr:   stdout,
-		DataDone: dataDone,
+		DataDone: make(chan bool),
 		Control: func(conn *websocket.Conn) {
 			for {
 				sig := <-ch
-				width, height := sig[0], sig[1]
-				msg := api.InstanceExecControl{}
-				msg.Command = "window-resize"
-				msg.Args = make(map[string]string)
-				msg.Args["width"] = strconv.Itoa(width)
-				msg.Args["height"] = strconv.Itoa(height)
-				conn.WriteJSON(msg)
+				conn.WriteJSON(sig)
 			}
 		},
 	})

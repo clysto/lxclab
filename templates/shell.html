@@ -32,7 +32,13 @@
         'ws://' + window.location.host + '/terminal/' + '{{ .container.Name }}'
       );
       function sendSize() {
-        const windowSize = { high: terminal.rows, width: terminal.cols };
+        const windowSize = {
+          command: 'window-resize',
+          args: {
+            height: `${terminal.rows}`,
+            width: `${terminal.cols}`,
+          },
+        };
         const blob = new Blob([JSON.stringify(windowSize)], {
           type: 'application/json',
         });

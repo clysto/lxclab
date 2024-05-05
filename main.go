@@ -3,6 +3,7 @@ package main
 import (
 	"embed"
 	"encoding/json"
+	"fmt"
 	"html/template"
 	"io"
 	"io/fs"
@@ -10,6 +11,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/canonical/lxd/shared/api"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 )
@@ -122,27 +124,35 @@ func terminal(c *gin.Context) {
 		c.Error(err)
 		return
 	}
+	conn.SetCloseHandler(func(code int, text string) error {
+		println("close", code, text)
+		return nil
+	})
 	defer conn.Close()
 	stdinReader, stdinWriter := io.Pipe()
 	stdoutReader, stdoutWriter := io.Pipe()
-	ch := make(chan [2]int)
+	ch := make(chan api.InstanceExecControl)
+
 	go func() {
 		for {
+			conn.SetReadDeadline(time.Now().Add(10 * time.Second))
 			messageType, message, err := conn.ReadMessage()
 			if err != nil {
+				ch <- api.InstanceExecControl{
+					Command: "signal",
+					Signal:  9,
+				}
 				return
 			}
 			if messageType == websocket.TextMessage {
 				stdinWriter.Write(message)
 			} else {
-				var windowSize struct {
-					High  int `json:"high"`
-					Width int `json:"width"`
-				}
-				if err := json.Unmarshal(message, &windowSize); err != nil {
+				var msg api.InstanceExecControl
+				if err := json.Unmarshal(message, &msg); err != nil {
 					continue
 				}
-				ch <- [2]int{windowSize.Width, windowSize.High}
+				fmt.Printf("msg: %+v\n", msg)
+				ch <- msg
 			}
 		}
 	}()
@@ -151,7 +161,7 @@ func terminal(c *gin.Context) {
 			data := make([]byte, 10240)
 			n, err := stdoutReader.Read(data)
 			if err != nil {
-				continue
+				return
 			}
 			if n > 0 {
 				conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
@@ -159,13 +169,11 @@ func terminal(c *gin.Context) {
 			}
 		}
 	}()
-	dataDone := make(chan bool)
-	err = client.StartShell(name, stdinReader, stdoutWriter, ch, dataDone)
+	err = client.StartShell(name, stdinReader, stdoutWriter, ch)
 	if err != nil {
 		c.Error(err)
 		return
 	}
-	<-dataDone
 }
 
 //go:embed templates/*
