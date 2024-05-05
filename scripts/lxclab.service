@@ -1,0 +1,13 @@
+[Unit]
+Description=lxclab
+After=network.target
+Wants=network-online.target
+
+[Service]
+Restart=always
+Type=simple
+ExecStart=/usr/local/bin/lxclab -port 8081 -profile default -db /var/lib/lxclab/lxclab.sqlite3
+Environment='GIN_MODE=release' 'LXD_SOCKET=/var/snap/lxd/common/lxd/unix.socket'
+
+[Install]
+WantedBy=multi-user.target
