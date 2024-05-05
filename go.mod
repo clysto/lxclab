@@ -7,6 +7,8 @@ require (
 	github.com/gin-gonic/gin v1.9.1
 	github.com/gorilla/websocket v1.5.1
 	github.com/lithammer/shortuuid/v4 v4.0.0
+	github.com/mattn/go-sqlite3 v1.14.22
+	golang.org/x/crypto v0.22.0
 )
 
 require (
@@ -38,7 +40,6 @@ require (
 	github.com/ugorji/go/codec v1.2.11 // indirect
 	github.com/zitadel/oidc/v2 v2.12.0 // indirect
 	golang.org/x/arch v0.3.0 // indirect
-	golang.org/x/crypto v0.22.0 // indirect
 	golang.org/x/net v0.24.0 // indirect
 	golang.org/x/oauth2 v0.19.0 // indirect
 	golang.org/x/sys v0.19.0 // indirect

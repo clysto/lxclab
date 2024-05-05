@@ -1,22 +1,27 @@
 package main
 
 import (
+	"database/sql"
 	"embed"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"html/template"
 	"io"
 	"io/fs"
 	"net/http"
-	"os"
+	"strconv"
 	"time"
 
 	"github.com/canonical/lxd/shared/api"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
+	_ "github.com/mattn/go-sqlite3"
+	"golang.org/x/crypto/bcrypt"
 )
 
 var client *LXCClient
+var db *sql.DB
 
 func home(c *gin.Context) {
 	user := c.MustGet(gin.AuthUserKey).(string)
@@ -34,6 +39,44 @@ func home(c *gin.Context) {
 		"sshPorts":   sshPorts,
 		"user":       user,
 	})
+}
+
+func signup(c *gin.Context) {
+	if c.Request.Method == "GET" {
+		c.HTML(200, "signup.html", nil)
+	} else {
+		username := c.PostForm("username")
+		password := c.PostForm("password")
+		hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+		if err != nil {
+			c.Error(err)
+			return
+		}
+		// check if user exists
+		rows, err := db.Query("SELECT username FROM users WHERE username = ?", username)
+		if err != nil {
+			c.Error(err)
+			return
+		}
+		if rows.Next() {
+			c.HTML(200, "signup.html", gin.H{
+				"error": "user already exists",
+			})
+			return
+		}
+		err = rows.Close()
+		if err != nil {
+			c.Error(err)
+			return
+		}
+		_, err = db.Exec("INSERT INTO users (username, password, instance_limit) VALUES (?, ?, 3)", username, string(hash))
+		if err != nil {
+			c.Error(err)
+			println("error", err)
+			return
+		}
+		c.Redirect(302, "/")
+	}
 }
 
 func create(c *gin.Context) {
@@ -176,6 +219,41 @@ func terminal(c *gin.Context) {
 	}
 }
 
+func BasicAuth(c *gin.Context) {
+	realm := "Authorization Required"
+	realm = "Basic realm=" + strconv.Quote(realm)
+	user, password, ok := c.Request.BasicAuth()
+	if !ok {
+		c.Header("WWW-Authenticate", realm)
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+	rows, err := db.Query("SELECT username, password FROM users WHERE username = ?", user)
+	if err != nil {
+		c.Error(err)
+		return
+	}
+	if !rows.Next() {
+		c.Header("WWW-Authenticate", realm)
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+	defer rows.Close()
+	var dbUser, dbPassword string
+	err = rows.Scan(&dbUser, &dbPassword)
+	if err != nil {
+		c.Error(err)
+		return
+	}
+	err = bcrypt.CompareHashAndPassword([]byte(dbPassword), []byte(password))
+	if err != nil {
+		c.Header("WWW-Authenticate", realm)
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+	c.Set(gin.AuthUserKey, user)
+}
+
 //go:embed templates/*
 var templatesDir embed.FS
 
@@ -183,20 +261,22 @@ var templatesDir embed.FS
 var staticDir embed.FS
 
 func main() {
-	port := os.Args[1]
-	defaultProfile := os.Args[2]
+	port := flag.Int("port", 8080, "port to listen on")
+	defaultProfile := flag.String("profile", "default", "default profile to use")
+	dbPath := flag.String("db", "lxclab.sqlite3", "path to sqlite3 database")
+
+	flag.Parse()
 
 	var err error
-	client, err = NewLXCClient(defaultProfile)
+	client, err = NewLXCClient(*defaultProfile)
+	if err != nil {
+		panic(err)
+	}
+	db, err = sql.Open("sqlite3", *dbPath)
 	if err != nil {
 		panic(err)
 	}
 	r := gin.Default()
-	r.Use(gin.BasicAuth(gin.Accounts{
-		"admin":  "admin",
-		"admin1": "admin1",
-		"admin2": "admin2",
-	}))
 	templ := template.Must(template.New("").ParseFS(templatesDir, "templates/*.html"))
 	r.SetHTMLTemplate(templ)
 	public, err := fs.Sub(staticDir, "public")
@@ -204,12 +284,14 @@ func main() {
 		panic(err)
 	}
 	r.StaticFS("/public", http.FS(public))
-	r.GET("/", home)
-	r.GET("/shell/:name", shell)
-	r.POST("/create", create)
-	r.POST("/start/:name", start)
-	r.POST("/stop/:name", stop)
-	r.POST("/delete/:name", delete)
-	r.GET("/terminal/:name", terminal)
-	r.Run(":" + port)
+	r.GET("/", BasicAuth, home)
+	r.GET("/shell/:name", BasicAuth, shell)
+	r.POST("/create", BasicAuth, create)
+	r.POST("/start/:name", BasicAuth, start)
+	r.POST("/stop/:name", BasicAuth, stop)
+	r.POST("/delete/:name", BasicAuth, delete)
+	r.GET("/terminal/:name", BasicAuth, terminal)
+	r.GET("/signup", signup)
+	r.POST("/signup", signup)
+	r.Run(fmt.Sprintf(":%d", *port))
 }

@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/png" href="/public/containers.svg" />
+    <style>
+      * {
+        box-sizing: border-box;
+        font-size: 15px;
+        font-family: SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
+          'Courier New', monospace;
+      }
+      body {
+        margin: 0 auto;
+        max-width: 800px;
+        padding: 10px 5px 5px 5px;
+      }
+      input {
+        padding: 4px 8px;
+        margin-right: 5px;
+        border: none;
+        border-bottom: 1px solid #888;
+        background-color: #eeeeee;
+        width: 100%;
+      }
+      input:focus {
+        outline: none;
+        border-color: #000;
+      }
+      #btn-create {
+        font-weight: bold;
+        padding: 4px 8px;
+        border: 1px solid #0e8420;
+        cursor: pointer;
+        background-color: #0e8420;
+        color: #ffffff;
+        width: 100%;
+      }
+      #btn-create:hover {
+        border: 1px solid #0c6d1a;
+        background-color: #0c6d1a;
+      }
+      header {
+        padding: 4px 0;
+        margin-bottom: 20px;
+        font-size: 16px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        border-top: 1px solid #888;
+        border-bottom: 1px solid #888;
+      }
+      footer {
+        text-align: center;
+        color: #888;
+        border-bottom: 1px solid #888;
+      }
+      .title {
+        margin-left: 10px;
+        flex: 1;
+      }
+      .form {
+        display: block;
+        width: 250px;
+        margin: 0 auto;
+        margin-bottom: 20px;
+      }
+      .form-control {
+        margin-bottom: 10px;
+      }
+      .error {
+        background-color: #ffe4e4;
+        color: #3a1818;
+        margin-bottom: 10px;
+        padding: 4px 8px;
+      }
+    </style>
+    <title>LXC Lab</title>
+  </head>
+  <body>
+    <header>
+      <img src="/public/containers.svg" style="height: 20px" />
+      <strong class="title">LXC Lab </strong>
+    </header>
+    <form action="/signup" method="post" class="form">
+      <div class="form-control">
+        <input type="text" name="username" placeholder="Username" required />
+      </div>
+      <div class="form-control">
+        <input
+          type="password"
+          name="password"
+          placeholder="Password"
+          required
+        />
+      </div>
+      {{if .error}}
+      <div class="error">user already exists</div>
+      {{end}}
+      <div class="form-control">
+        <button id="btn-create">Sign Up</button>
+      </div>
+    </form>
+    <footer>All rights reserved. &copy; 2023-2024</footer>
+  </body>
+</html>
