@@ -260,6 +260,22 @@ var templatesDir embed.FS
 //go:embed public
 var staticDir embed.FS
 
+func initdb(dbPath string) {
+	var err error
+	db, err = sql.Open("sqlite3", dbPath)
+	if err != nil {
+		panic(err)
+	}
+	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS users (
+    username VARCHAR(50) NOT NULL PRIMARY KEY,
+    password VARCHAR(50) NOT NULL,
+    instance_limit INT NOT NULL
+)`)
+	if err != nil {
+		panic(err)
+	}
+}
+
 func main() {
 	port := flag.Int("port", 8080, "port to listen on")
 	defaultProfile := flag.String("profile", "default", "default profile to use")
@@ -272,10 +288,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	db, err = sql.Open("sqlite3", *dbPath)
-	if err != nil {
-		panic(err)
-	}
+	initdb(*dbPath)
 	r := gin.Default()
 	templ := template.Must(template.New("").ParseFS(templatesDir, "templates/*.html"))
 	r.SetHTMLTemplate(templ)
